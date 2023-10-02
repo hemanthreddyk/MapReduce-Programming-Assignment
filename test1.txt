@@ -1,0 +1,51 @@
+wget https://de-mysql-connector.s3.amazonaws.com/mysql-connector-java-8.0.25.tar.gz
+tar -xvf mysql-connector-java-8.0.25.tar.gz
+cd mysql-connector-java-8.0.25/
+sudo cp mysql-connector-java-8.0.25.jar /usr/lib/sqoop/lib/
+
+CREATE DATABASE recipes_database;
+USE recipes_database;
+CREATE TABLE recipes (recipe_id INT NOT NULL, recipe_name VARCHAR(30)
+NOT NULL, PRIMARY KEY (recipe_id), UNIQUE (recipe_name));
+INSERT INTO recipes (recipe_id, recipe_name) VALUES (1,'Tacos'),
+(2,'Tomato Soup'), (3, 'Grilled Cheese');
+CREATE TABLE ingredients ( ingredient_id INT NOT NULL,ingredient_name VARCHAR(30) NOT NULL, ingredient_price INT NOT NULL,
+PRIMARY KEY (ingredient_id), UNIQUE (ingredient_name));
+INSERT INTO ingredients (ingredient_id, ingredient_name,
+ingredient_price) VALUES (1, 'Beef', 5), (2, 'Lettuce', 1), (3, 'Tomatoes',
+2), (4,'Taco Shell', 2), (5, 'Cheese', 3), (6, 'Milk', 1), (7, 'Bread', 2);
+CREATE TABLE recipe_ingredients ( recipe_id int NOT NULL,
+ingredient_id INT NOT NULL, amount INT NOT NULL, PRIMARY KEY
+(recipe_id,ingredient_id));
+INSERT INTO recipe_ingredients (recipe_id, ingredient_id, amount)
+VALUES (1,1,1), (1,2,2), (1,3,2), (1,4,3), (1,5,1), (2,3,2), (2,6,1),
+(3,5,1), (3,7,2);
+
+create database test;
+use test;
+create table employee (id INT, first_name VARCHAR(150), designation
+VARCHAR(150), salary INT, PRIMARY KEY (id));
+insert into employee values (100,'Harbhajan','Software Engineer',5000);
+insert into employee values (101,'Yuvraj','Senior Software
+Engineer',7000);
+insert into employee values (102,'MS Dhoni','Manager',10000);
+insert into employee values (103,'Sachin Tendulkar','Senior
+Manager',11000);
+insert into employee values (104,'Virat Kohli',null, 7000);
+select * from employee;
+create table test.retailinfo(invoiceno varchar(150),stockcode
+varchar(150),description varchar(150),quantity int,invoicedate
+varchar(150),unitprice double,customerid int,country varchar(150));
+create table test.flights_info (destination VARCHAR(150), origin
+VARCHAR(150), count INT);
+ show tables;
+
+ 
+
+sqoop export --connect jdbc:mysql://database-1.c10i7rbsadgr.us-east-1.rds.amazonaws.com:3306/test \
+--table retailinfo \
+--username admin --password admin_mysql \
+--export-dir /user/root/test \
+--fields-terminated-by ',' --lines-terminated-by '\n' \
+--columns "invoiceno,stockcode,description,quantity,invoicedate,unitprice,customerid,country"
+

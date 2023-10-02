@@ -1,0 +1,112 @@
+mysql -h database-1.c10i7rbsadgr.us-east-1.rds.amazonaws.com -P 3306 -u admin -p
+
+CREATE DATABASE YellowTaxiTripsDB;
+
+USE YellowTaxiTripsDB;
+
+CREATE TABLE tripdata (
+    VendorID INT,
+    tpep_pickup_datetime VARCHAR(20),
+    tpep_dropoff_datetime VARCHAR(20),
+    passenger_count INT,
+    trip_distance FLOAT,
+    RatecodeID INT,
+    store_and_fwd_flag CHAR(1),
+    PULocationID INT,
+    DOLocationID INT,
+    payment_type INT,
+    fare_amount FLOAT,
+    extra FLOAT,
+    mta_tax FLOAT,
+    tip_amount FLOAT,
+    tolls_amount FLOAT,
+    improvement_surcharge FLOAT,
+    total_amount FLOAT,
+    congestion_surcharge FLOAT DEFAULT 0.0,
+    airport_fee FLOAT DEFAULT 0.0
+);
+
+ALTER TABLE tripdata
+ALTER COLUMN congestion_surcharge SET DEFAULT 0.0;
+
+wget https://nyc-tlc-upgrad.s3.amazonaws.com/yellow_tripdata_2017-01.csv
+
+LOAD DATA LOCAL INFILE '/home/hadoop/YellowCabsData/yellow_tripdata_2017-01.csv' INTO TABLE tripdata FIELDS TERMINATED BY ',' LINES TERMINATED BY '\n' IGNORE 1 LINES;
+LOAD DATA LOCAL INFILE '/home/hadoop/YellowCabsData/yellow_tripdata_2017-02.csv' INTO TABLE tripdata FIELDS TERMINATED BY ',' LINES TERMINATED BY '\n' IGNORE 1 LINES;
+
+
+
+
+
+sqoop import \
+  --connect jdbc:mysql://database-1.c10i7rbsadgr.us-east-1.rds.amazonaws.com:3306/YellowTaxiTripsDB \
+  --username admin \
+  --password admin_mysql \
+  --table tripdata \
+  --hbase-table TaxiTrips \
+  --column-family TripDetails \
+  --hbase-create-table \
+  --hbase-row-key VendorID,tpep_pickup_datetime,tpep_dropoff_datetime \
+  --split-by VendorID
+
+
+
+wget https://de-mysql-connector.s3.amazonaws.com/mysql-connector-java-8.0.25.tar.gz
+
+tar -xvf mysql-connector-java-8.0.25.tar.gz
+
+cd mysql-connector-java-8.0.25
+sudo cp mysql-connector-java-8.0.25.jar /usr/lib/sqoop/lib/
+
+
+sqoop import \
+  --connect jdbc:mysql://database-1.c10i7rbsadgr.us-east-1.rds.amazonaws.com:3306/YellowTaxiTripsDB \
+  --username admin \
+  --password admin_mysql \
+  --table tripdata \
+  --hbase-table TaxiTrips \
+  --column-family TripDetails \
+  --hbase-create-table \
+  --hbase-row-key VendorID,tpep_pickup_datetime,tpep_dropoff_datetime \
+  
+  --where "1=1 AND \$CONDITIONS LIMIT 10"  # Use a subquery to limit the number of records.
+
+sqoop import \
+--connect jdbc:mysql://database-1.c10i7rbsadgr.us-east-1.rds.amazonaws.com:3306/YellowTaxiTripsDB \
+--username admin \
+--password admin_mysql \
+--table tripdata \
+--hbase-table TaxiTrips \
+--column-family TripDetails \
+--hbase-create-table \
+--hbase-row-key VendorID,tpep_pickup_datetime,tpep_dropoff_datetime \
+--split-by VendorID \
+--hbase-bulkload \
+-m 1
+
+
+import into hadoop fs
+sqoop import \
+--connect jdbc:mysql://database-1.c10i7rbsadgr.us-east-1.rds.amazonaws.com:3306/YellowTaxiTripsDB \
+--username admin \
+--password admin_mysql \
+--table tripdata \
+--target-dir /user/root/tripdata \
+--split-by VendorID
+
+sqoop import \
+--connect jdbc:mysql://database-1.c10i7rbsadgr.us-east-1.rds.amazonaws.com:3306/YellowTaxiTripsDB \
+--username admin \
+--password admin_mysql \
+--table tripdata \
+--hbase-table TaxiTrips \
+--column-family TripDetails \
+--hbase-create-table \
+--hbase-row-key VendorID,tpep_pickup_datetime,tpep_dropoff_datetime \
+--split-by payment_type \
+--hbase-bulkload
+
+
+export HADOOP_CLASSPATH=/usr/lib/hbase/lib/*
+sh /etc/hadoop/conf.empty/hadoop-env.sh
+
